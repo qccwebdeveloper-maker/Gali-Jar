@@ -131,6 +131,9 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
 .log .x.confirm{background:var(--fine);color:#fff;border-color:var(--fine)}
 .empty{justify-content:center;color:var(--muted);text-align:center;padding:22px!important}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.sync::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.sync.ok::before{background:#10B981}
+.sync.bad::before{background:var(--fine)}
 .linkbtn{font:inherit;font-size:.82rem;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
 .linkbtn.danger{color:var(--fine)}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:99px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;box-shadow:var(--shadow)}
@@ -200,7 +203,7 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
       </div>
       <ul class="log" id="log"></ul>
       <div class="foot">
-        <span>Data isi browser mein save hota hai</span>
+        <span id="sync">Data isi browser mein save hota hai</span>
         <button class="linkbtn danger" id="reset" type="button">Sab reset karo</button>
       </div>
     </section>
@@ -214,17 +217,60 @@ const PLAYERS=[
   {n:"Ankit",c:"#F59E0B"},{n:"Aryan",c:"#EC4899"},{n:"Nakul",c:"#06B6D4"}
 ];
 const COLOR=Object.fromEntries(PLAYERS.map(p=>[p.n,p.c]));
-const FINE=10, LS="gali-jar-v1";
+// Firebase Realtime Database ka URL (jaise https://gali-jar-default-rtdb.firebaseio.com). Khaali ho to data sirf isi browser mein rehta hai.
+const DB_URL="";
+const FINE=10, LS="gali-jar-v1", CLOUD=!!DB_URL, API=DB_URL.replace(/\/+$/,"")+"/entries";
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,"0");
 const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const TODAY=ymd(new Date());
 const rupee=n=>"₹"+n.toLocaleString("en-IN");
-let entries=[], view=new Date(), selDay=null;
+let entries=[], store={}, loaded=!CLOUD, view=new Date(), selDay=null;
 view.setDate(1);
 
-function load(){try{const v=JSON.parse(localStorage.getItem(LS)||"[]");entries=Array.isArray(v)?v:[]}catch(e){entries=[]}}
-function save(){try{localStorage.setItem(LS,JSON.stringify(entries))}catch(e){toast("Browser save nahi kar pa raha")}}
+// store = {id: {name,date,note,at}} (yahi Firebase mein bhi hai); entries = render ke liye array
+const okEntry=e=>e&&typeof e.name==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(e.date);
+function rebuild(){entries=Object.keys(store).filter(k=>okEntry(store[k])).map(k=>({id:k,name:store[k].name,date:store[k].date,note:typeof store[k].note==="string"?store[k].note:"",at:Number(store[k].at)||0}))}
+function load(){try{const v=JSON.parse(localStorage.getItem(LS)||"[]");store={};(Array.isArray(v)?v:[]).forEach(e=>{if(e&&e.id)store[e.id]=e})}catch(e){store={}}rebuild()}
+function save(){try{localStorage.setItem(LS,JSON.stringify(Object.keys(store).map(k=>({...store[k],id:k}))))}catch(e){toast("Browser save nahi kar pa raha")}}
+
+async function db(method,path,body){
+  const r=await fetch(API+path+".json",{method,headers:body===undefined?{}:{"Content-Type":"application/json"},body:body===undefined?undefined:JSON.stringify(body)});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function setSync(ok){const s=$("sync");s.className="sync "+(ok?"ok":"bad");s.textContent=ok?"Live: sabke saath sync ho raha hai":"Offline, dobara judne ki koshish..."}
+function sync(next){
+  if(JSON.stringify(next)===JSON.stringify(store)){if(!loaded){loaded=true;render()}return}
+  const fresh=loaded?Object.keys(next).filter(k=>!(k in store)&&okEntry(next[k])):[];
+  store=next;loaded=true;rebuild();render();
+  if(fresh.length===1)toast(next[fresh[0]].name+" ko ₹10 fine 💸");
+  else if(fresh.length>1)toast(fresh.length+" nayi galiyan aayi");
+}
+function onEvent(ev,merge){
+  let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  const parts=m.path.split("/").filter(Boolean);
+  if(parts.length>1)return resync();
+  const next=(parts.length||merge)?{...store}:{};
+  if(!parts.length){if(m.data&&typeof m.data==="object")for(const k in m.data){if(m.data[k]===null)delete next[k];else next[k]=m.data[k]}}
+  else if(m.data===null)delete next[parts[0]];
+  else next[parts[0]]=merge?{...next[parts[0]],...m.data}:m.data;
+  sync(next);
+}
+function resync(){db("GET","").then(d=>sync(d&&typeof d==="object"?d:{})).catch(()=>{})}
+function startSync(){
+  const es=new EventSource(API+".json");
+  es.onopen=()=>setSync(true);
+  es.addEventListener("put",e=>onEvent(e,false));
+  es.addEventListener("patch",e=>onEvent(e,true));
+  es.addEventListener("cancel",()=>{setSync(false);toast("Database ne access nahi diya, rules check karo")});
+  es.onerror=()=>{setSync(false);if(es.readyState===2){es.close();setTimeout(startSync,5000)}};
+}
+// change() store ko turant badalta hai, op() wahi change Firebase pe bhejta hai
+function commit(change,op){
+  change();rebuild();
+  if(CLOUD)op().catch(()=>{toast("Save nahi hua, internet check karo");resync()});else save();
+}
 function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1700)}
 
 function setDate(v){$("when").value=v;document.querySelectorAll(".quick .pill").forEach(b=>{const d=new Date();d.setDate(d.getDate()+Number(b.dataset.q));b.classList.toggle("on",ymd(d)===v)})}
@@ -298,6 +344,7 @@ function renderLog(){
   $("logtitle").textContent=(selDay?fmtDate(selDay):"Saari galiyan")+(list.length?" · "+rupee(sum):"");
   $("clearsel").hidden=!selDay;
   const ul=$("log");ul.innerHTML="";
+  if(!loaded){ul.innerHTML='<li class="empty">Load ho raha hai...</li>';return}
   if(!list.length){ul.innerHTML='<li class="empty">'+(selDay?"Is din sab sanskari the 😇":"Abhi tak koi gali nahi. Pehla button dabao!")+'</li>';return}
   list.forEach(e=>{
     const li=document.createElement("li");
@@ -307,27 +354,28 @@ function renderLog(){
     li.querySelector(".note").textContent=fmtDate(e.date)+(e.note?" · "+e.note:"");
     const x=li.querySelector(".x");
     x.onclick=()=>{if(!x.classList.contains("confirm")){x.classList.add("confirm");x.textContent="Pakka?";setTimeout(()=>{x.classList.remove("confirm");x.textContent="Hatao"},3000);return}
-      entries=entries.filter(v=>v.id!==e.id);save();render();toast("Entry hata di")};
+      commit(()=>{delete store[e.id]},()=>db("DELETE","/"+e.id));render();toast("Entry hata di")};
     ul.appendChild(li);
   });
 }
 
 function add(name){
-  const e={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,date:$("when").value||TODAY,note:$("note").value.trim(),at:Date.now()};
-  entries.push(e);save();$("note").value="";render();
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const e={name,date:$("when").value||TODAY,note:$("note").value.trim(),at:Date.now()};
+  commit(()=>{store[id]=e},()=>db("PUT","/"+id,e));$("note").value="";render();
   const card=document.querySelector('.p[data-name="'+name+'"]');if(card){card.classList.add("bump")}
   toast(name+" ko ₹10 fine 💸");
 }
 function undo(name){
   const mine=entries.filter(e=>e.name===name).sort((a,b)=>b.at-a.at);
   if(!mine.length)return;
-  entries=entries.filter(e=>e.id!==mine[0].id);save();render();toast(name+" ki last entry hata di");
+  const id=mine[0].id;commit(()=>{delete store[id]},()=>db("DELETE","/"+id));render();toast(name+" ki last entry hata di");
 }
 
 let resetArmed=false;
 $("reset").onclick=()=>{
-  if(!resetArmed){resetArmed=true;$("reset").textContent="Pakka? Sab data mit jayega";setTimeout(()=>{resetArmed=false;$("reset").textContent="Sab reset karo"},3500);return}
-  entries=[];save();resetArmed=false;$("reset").textContent="Sab reset karo";render();toast("Sab reset ho gaya");
+  if(!resetArmed){resetArmed=true;$("reset").textContent=CLOUD?"Pakka? Sabka data mit jayega":"Pakka? Sab data mit jayega";setTimeout(()=>{resetArmed=false;$("reset").textContent="Sab reset karo"},3500);return}
+  commit(()=>{store={}},()=>db("DELETE",""));resetArmed=false;$("reset").textContent="Sab reset karo";render();toast("Sab reset ho gaya");
 };
 document.querySelectorAll(".quick .pill").forEach(b=>b.onclick=()=>{const d=new Date();d.setDate(d.getDate()+Number(b.dataset.q));setDate(ymd(d))});
 $("when").addEventListener("change",()=>setDate($("when").value));
@@ -336,7 +384,12 @@ $("next").onclick=()=>{view.setMonth(view.getMonth()+1);renderCal()};
 $("gotoday").onclick=()=>{view=new Date();view.setDate(1);renderCal()};
 $("clearsel").onclick=()=>{selDay=null;renderCal();renderLog()};
 
-load();setDate(TODAY);render();
+setDate(TODAY);
+if(CLOUD){
+  $("sync").className="sync";$("sync").textContent="Judd raha hai...";
+  render();startSync();
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)resync()});
+}else{load();render()}
 </script>
 </body>
 </html>
