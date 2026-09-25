@@ -49,6 +49,10 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .bigtotal{margin-top:18px}
 .bigtotal .label{color:var(--hero-muted)}
 .bigtotal strong{display:block;font-family:var(--display);font-weight:800;font-size:3.2rem;line-height:1;color:#fff}
+.paybtn{margin-top:16px;font:inherit;font-weight:700;display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#161B2E;border:0;border-radius:12px;padding:9px 16px;cursor:pointer;transition:transform .08s,filter .15s}
+.paybtn:hover{filter:brightness(1.05)}
+.paybtn:active{transform:scale(.97)}
+.paybtn svg{width:18px;height:18px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-self:end;position:relative;z-index:1}
 .stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px}
 .stat .label{color:var(--hero-muted)}
@@ -62,7 +66,8 @@ h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
 .field{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:4px 6px 4px 12px}
 .field label{font-size:.8rem;font-weight:700;color:var(--muted);white-space:nowrap}
 .field input{font:inherit;color:var(--ink);background:transparent;border:0;padding:6px 4px;min-width:0;width:100%}
-.field input:focus{outline:none}
+.field input:focus,.field select:focus{outline:none}
+.field select{font:inherit;color:var(--ink);background:transparent;border:0;padding:6px 4px;min-width:0;cursor:pointer}
 .field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .f-note{flex:1;min-width:200px}
 .quick{display:flex;gap:6px}
@@ -128,7 +133,11 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
 .log .note{color:var(--muted);font-size:.82rem;overflow-wrap:anywhere}
 .log .amt{font-family:var(--display);font-weight:700;color:var(--fine)}
 .log .x{font:inherit;font-size:.8rem;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;cursor:pointer;padding:2px 8px}
-.log .x.confirm{background:var(--fine);color:#fff;border-color:var(--fine)}
+.log .by{font-size:.78rem;color:var(--muted)}
+.log .by.del{color:var(--fine);font-weight:700}
+.log .amt.gone{color:var(--muted);text-decoration:line-through}
+.log.del{max-height:240px}
+.delhead{margin:0 0 8px;font-size:1.05rem}
 .empty{justify-content:center;color:var(--muted);text-align:center;padding:22px!important}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
 .sync::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
@@ -136,6 +145,19 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
 .sync.bad::before{background:var(--fine)}
 .linkbtn{font:inherit;font-size:.82rem;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0}
 .linkbtn.danger{color:var(--fine)}
+/* dialogs */
+.dlg{border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);padding:20px;width:min(380px,calc(100vw - 32px));box-shadow:var(--shadow);font:inherit}
+.dlg::backdrop{background:rgba(14,18,32,.55)}
+.dlg h3{font-size:1.3rem;margin-bottom:10px}
+.dlg p{margin:0 0 8px;overflow-wrap:anywhere}
+.dlg .sub{color:var(--muted);font-size:.85rem}
+.dact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.dbtn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:12px;padding:9px 16px;cursor:pointer}
+.dbtn.danger{background:var(--fine);border-color:var(--fine);color:#fff}
+.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.pickbtn{font:inherit;font-weight:700;display:flex;align-items:center;gap:10px;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer}
+.pickbtn .av{width:32px;height:32px;font-size:.95rem}
+.qrimg{display:block;width:100%;height:auto;border-radius:12px;margin:10px 0}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:99px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;box-shadow:var(--shadow)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -156,6 +178,10 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
       <div class="bigtotal">
         <div class="label">Jar mein total</div>
         <strong class="num" id="total">₹0</strong>
+        <button class="paybtn" id="pay" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z"/><path d="M14 14h3v3h-3zM20 14v0M14 20v0M17.5 20.5h3.5v-3.5"/></svg>
+          Jar mein paise daalo (QR)
+        </button>
       </div>
     </div>
     <div class="stats">
@@ -173,6 +199,7 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
     <div class="row">
       <div class="field"><label for="when">Date</label><input type="date" id="when"></div>
       <div class="field f-note"><label for="note">Note</label><input type="text" id="note" placeholder="Kya hua? jaise: match haarne pe" maxlength="80"></div>
+      <div class="field"><label for="me">Aap kaun?</label><select id="me"></select></div>
     </div>
   </section>
 
@@ -202,6 +229,10 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
         <button class="pill" id="clearsel" type="button" hidden>Sab dikhao</button>
       </div>
       <ul class="log" id="log"></ul>
+      <div id="delwrap" hidden>
+        <h2 class="delhead" id="deltitle">Hatayi gayi entries</h2>
+        <ul class="log del" id="dellog"></ul>
+      </div>
       <div class="foot">
         <span id="sync">Data isi browser mein save hota hai</span>
         <button class="linkbtn danger" id="reset" type="button">Sab reset karo</button>
@@ -209,6 +240,21 @@ button:focus-visible,.day:focus-visible{outline:3px solid var(--accent);outline-
     </section>
   </div>
 </div>
+<dialog class="dlg" id="dlg" aria-labelledby="dlgtitle">
+  <h3 id="dlgtitle"></h3>
+  <div class="dbody"></div>
+  <div class="dact"></div>
+</dialog>
+<dialog class="dlg" id="qrdlg" aria-labelledby="qrtitle">
+  <h3 id="qrtitle">Jar mein paise daalo</h3>
+  <p class="sub">Kisi bhi UPI app se scan karo</p>
+  <img class="qrimg" src="qr.png" width="758" height="720" alt="UPI QR code: Aryan Kumar">
+  <p>UPI ID: <b id="upi">aryankumar7645@okaxis</b></p>
+  <div class="dact">
+    <button class="dbtn" id="copyupi" type="button">UPI ID copy karo</button>
+    <button class="dbtn" id="qrclose" type="button">Band karo</button>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -225,12 +271,22 @@ const pad=n=>String(n).padStart(2,"0");
 const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const TODAY=ymd(new Date());
 const rupee=n=>"₹"+n.toLocaleString("en-IN");
-let entries=[], store={}, loaded=!CLOUD, view=new Date(), selDay=null;
+let entries=[], removed=[], store={}, loaded=!CLOUD, view=new Date(), selDay=null;
 view.setDate(1);
 
-// store = {id: {name,date,note,at}} (yahi Firebase mein bhi hai); entries = render ke liye array
+// store = {id: {name,date,note,at,by,delBy,delAt}} (yahi Firebase mein bhi hai).
+// by = kisne add kiya, delBy/delAt = kisne aur kab hataya. Hatayi entry delete nahi hoti, sirf delBy lag jaata hai.
+// entries = abhi ki galiyan, removed = hatayi gayi, dono render ke liye array
 const okEntry=e=>e&&typeof e.name==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(e.date);
-function rebuild(){entries=Object.keys(store).filter(k=>okEntry(store[k])).map(k=>({id:k,name:store[k].name,date:store[k].date,note:typeof store[k].note==="string"?store[k].note:"",at:Number(store[k].at)||0}))}
+const str=v=>typeof v==="string"?v:"";
+function rebuild(){
+  const all=Object.keys(store).filter(k=>okEntry(store[k])).map(k=>{const s=store[k];return{id:k,name:s.name,date:s.date,note:str(s.note),at:Number(s.at)||0,by:str(s.by),delBy:str(s.delBy),delAt:Number(s.delAt)||0}});
+  entries=all.filter(e=>!e.delBy);removed=all.filter(e=>e.delBy);
+}
+// "Aap kaun" sirf isi browser mein yaad rehta hai; login nahi hai, isliye naam bharose pe hai
+const ME="gali-jar-me";
+function getMe(){try{const v=localStorage.getItem(ME);return PLAYERS.some(p=>p.n===v)?v:""}catch(e){return""}}
+function setMe(n){try{localStorage.setItem(ME,n)}catch(e){}$("me").value=n}
 function load(){try{const v=JSON.parse(localStorage.getItem(LS)||"[]");store={};(Array.isArray(v)?v:[]).forEach(e=>{if(e&&e.id)store[e.id]=e})}catch(e){store={}}rebuild()}
 function save(){try{localStorage.setItem(LS,JSON.stringify(Object.keys(store).map(k=>({...store[k],id:k}))))}catch(e){toast("Browser save nahi kar pa raha")}}
 
@@ -242,15 +298,18 @@ async function db(method,path,body){
 function setSync(ok){const s=$("sync");s.className="sync "+(ok?"ok":"bad");s.textContent=ok?"Live: sabke saath sync ho raha hai":"Offline, dobara judne ki koshish..."}
 function sync(next){
   if(JSON.stringify(next)===JSON.stringify(store)){if(!loaded){loaded=true;render()}return}
-  const fresh=loaded?Object.keys(next).filter(k=>!(k in store)&&okEntry(next[k])):[];
+  const fresh=loaded?Object.keys(next).filter(k=>!(k in store)&&okEntry(next[k])&&!next[k].delBy):[];
+  const gone=loaded?Object.keys(next).filter(k=>okEntry(next[k])&&next[k].delBy&&store[k]&&!store[k].delBy):[];
   store=next;loaded=true;rebuild();render();
-  if(fresh.length===1)toast(next[fresh[0]].name+" ko ₹10 fine 💸");
+  if(fresh.length===1)toast((next[fresh[0]].by?next[fresh[0]].by+" ne ":"")+next[fresh[0]].name+" ko ₹10 fine lagaya 💸");
   else if(fresh.length>1)toast(fresh.length+" nayi galiyan aayi");
+  else if(gone.length===1)toast(next[gone[0]].delBy+" ne "+next[gone[0]].name+" ki entry hata di");
+  else if(gone.length>1)toast(gone.length+" entries hata di gayi");
 }
 function onEvent(ev,merge){
   let m;try{m=JSON.parse(ev.data)}catch(e){return}
   const parts=m.path.split("/").filter(Boolean);
-  if(parts.length>1)return resync();
+  if(parts.length>1||(merge&&!parts.length))return resync();
   const next=(parts.length||merge)?{...store}:{};
   if(!parts.length){if(m.data&&typeof m.data==="object")for(const k in m.data){if(m.data[k]===null)delete next[k];else next[k]=m.data[k]}}
   else if(m.data===null)delete next[parts[0]];
@@ -337,6 +396,22 @@ function renderCal(){
 }
 
 function fmtDate(s){const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+const fmtAt=t=>t?new Date(t).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"";
+const entryText=e=>e.name+" ki gali · "+fmtDate(e.date)+(e.note?" · "+e.note:"");
+
+function logRow(e,gone){
+  const li=document.createElement("li");
+  li.innerHTML='<div class="av"></div><div class="meta"><div class="who"></div><div class="note"></div><div class="by del"></div><div class="by add"></div></div><span class="amt num">₹10</span>'+(gone?'':'<button class="x" type="button">Hatao</button>');
+  const av=li.querySelector(".av");av.textContent=e.name[0];av.style.background=COLOR[e.name]||"#888";
+  li.querySelector(".who").textContent=e.name;
+  li.querySelector(".note").textContent=fmtDate(e.date)+(e.note?" · "+e.note:"");
+  const delLine=li.querySelector(".by.del"),addLine=li.querySelector(".by.add");
+  if(gone)delLine.textContent="Hataya: "+e.delBy+(e.delAt?" · "+fmtAt(e.delAt):"");else delLine.remove();
+  if(e.by)addLine.textContent="Add kiya: "+e.by+(e.at?" · "+fmtAt(e.at):"");else addLine.remove();
+  if(gone)li.querySelector(".amt").classList.add("gone");
+  else li.querySelector(".x").onclick=()=>confirmRemove(e);
+  return li;
+}
 
 function renderLog(){
   const list=entries.filter(e=>!selDay||e.date===selDay).sort((a,b)=>b.date.localeCompare(a.date)||b.at-a.at);
@@ -344,39 +419,91 @@ function renderLog(){
   $("logtitle").textContent=(selDay?fmtDate(selDay):"Saari galiyan")+(list.length?" · "+rupee(sum):"");
   $("clearsel").hidden=!selDay;
   const ul=$("log");ul.innerHTML="";
-  if(!loaded){ul.innerHTML='<li class="empty">Load ho raha hai...</li>';return}
-  if(!list.length){ul.innerHTML='<li class="empty">'+(selDay?"Is din sab sanskari the 😇":"Abhi tak koi gali nahi. Pehla button dabao!")+'</li>';return}
-  list.forEach(e=>{
-    const li=document.createElement("li");
-    li.innerHTML='<div class="av"></div><div class="meta"><div class="who"></div><div class="note"></div></div><span class="amt num">₹10</span><button class="x" type="button">Hatao</button>';
-    const av=li.querySelector(".av");av.textContent=e.name[0];av.style.background=COLOR[e.name]||"#888";
-    li.querySelector(".who").textContent=e.name;
-    li.querySelector(".note").textContent=fmtDate(e.date)+(e.note?" · "+e.note:"");
-    const x=li.querySelector(".x");
-    x.onclick=()=>{if(!x.classList.contains("confirm")){x.classList.add("confirm");x.textContent="Pakka?";setTimeout(()=>{x.classList.remove("confirm");x.textContent="Hatao"},3000);return}
-      commit(()=>{delete store[e.id]},()=>db("DELETE","/"+e.id));render();toast("Entry hata di")};
-    ul.appendChild(li);
+  if(!loaded){ul.innerHTML='<li class="empty">Load ho raha hai...</li>';renderRemoved();return}
+  if(!list.length)ul.innerHTML='<li class="empty">'+(selDay?"Is din sab sanskari the 😇":"Abhi tak koi gali nahi. Pehla button dabao!")+'</li>';
+  list.forEach(e=>ul.appendChild(logRow(e,false)));
+  renderRemoved();
+}
+function renderRemoved(){
+  const list=removed.filter(e=>!selDay||e.date===selDay).sort((a,b)=>b.delAt-a.delAt);
+  $("delwrap").hidden=!loaded||!list.length;
+  $("deltitle").textContent="Hatayi gayi entries · "+list.length;
+  const ul=$("dellog");ul.innerHTML="";
+  list.slice(0,40).forEach(e=>ul.appendChild(logRow(e,true)));
+  if(list.length>40){const li=document.createElement("li");li.className="empty";li.textContent="+ "+(list.length-40)+" purani hatayi gayi entries";ul.appendChild(li)}
+}
+
+// dialogs
+const para=(t,c)=>{const p=document.createElement("p");p.textContent=t;if(c)p.className=c;return p};
+function modal(title,nodes,btns){
+  const d=$("dlg");
+  $("dlgtitle").textContent=title;
+  d.querySelector(".dbody").replaceChildren(...nodes);
+  const a=d.querySelector(".dact");a.replaceChildren();
+  btns.forEach(x=>{const b=document.createElement("button");b.type="button";b.className="dbtn"+(x.cls?" "+x.cls:"");b.textContent=x.t;b.onclick=()=>{d.close();if(x.fn)x.fn()};a.appendChild(b)});
+  d.showModal();
+}
+// add/hatane se pehle pata hona chahiye kaun kar raha hai
+function needMe(cb){
+  const m=getMe();if(m)return cb(m);
+  const g=document.createElement("div");g.className="pick";
+  PLAYERS.forEach(p=>{
+    const b=document.createElement("button");b.type="button";b.className="pickbtn";
+    const a=document.createElement("span");a.className="av";a.textContent=p.n[0];a.style.background=p.c;
+    b.append(a,p.n);b.onclick=()=>{setMe(p.n);$("dlg").close();cb(p.n)};g.appendChild(b);
   });
+  modal("Aap kaun ho?",[para("Gali add ya hatane se pehle apna naam chuno, taaki sabko pata rahe kisne kiya.","sub"),g],[{t:"Cancel"}]);
+}
+function confirmRemove(e){
+  needMe(me=>modal("Pakka hatana hai?",[
+    para(entryText(e)),
+    para(e.by?"Add kiya: "+e.by:"Kisne add kiya, ye record nahi hai.","sub"),
+    para("Hatane wala: "+me+" (sabko dikhega)","sub")
+  ],[{t:"Nahi"},{t:"Haan, hatao",cls:"danger",fn:()=>{if(remove([e.id],me))toast(e.name+" ki entry hata di")}}]));
+}
+// entry delete nahi hoti, sirf delBy/delAt lagta hai taaki "Hatayi gayi entries" mein dikhe
+function remove(ids,me){
+  const live=ids.filter(id=>store[id]&&!store[id].delBy);
+  if(!live.length){toast("Ye pehle hi hata di gayi thi");return false}
+  const t=Date.now();
+  commit(()=>{live.forEach(id=>{store[id]={...store[id],delBy:me,delAt:t}})},
+    ()=>live.length===1?db("PATCH","/"+live[0],{delBy:me,delAt:t}):db("PATCH","",Object.fromEntries(live.flatMap(id=>[[id+"/delBy",me],[id+"/delAt",t]]))));
+  render();return true;
 }
 
 function add(name){
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const e={name,date:$("when").value||TODAY,note:$("note").value.trim(),at:Date.now()};
-  commit(()=>{store[id]=e},()=>db("PUT","/"+id,e));$("note").value="";render();
-  const card=document.querySelector('.p[data-name="'+name+'"]');if(card){card.classList.add("bump")}
-  toast(name+" ko ₹10 fine 💸");
+  needMe(me=>{
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const e={name,date:$("when").value||TODAY,note:$("note").value.trim(),at:Date.now(),by:me};
+    commit(()=>{store[id]=e},()=>db("PUT","/"+id,e));$("note").value="";render();
+    const card=document.querySelector('.p[data-name="'+name+'"]');if(card){card.classList.add("bump")}
+    toast(name+" ko ₹10 fine 💸");
+  });
 }
 function undo(name){
   const mine=entries.filter(e=>e.name===name).sort((a,b)=>b.at-a.at);
-  if(!mine.length)return;
-  const id=mine[0].id;commit(()=>{delete store[id]},()=>db("DELETE","/"+id));render();toast(name+" ki last entry hata di");
+  if(mine.length)confirmRemove(mine[0]);
 }
 
-let resetArmed=false;
 $("reset").onclick=()=>{
-  if(!resetArmed){resetArmed=true;$("reset").textContent=CLOUD?"Pakka? Sabka data mit jayega":"Pakka? Sab data mit jayega";setTimeout(()=>{resetArmed=false;$("reset").textContent="Sab reset karo"},3500);return}
-  commit(()=>{store={}},()=>db("DELETE",""));resetArmed=false;$("reset").textContent="Sab reset karo";render();toast("Sab reset ho gaya");
+  if(!entries.length)return toast("Reset karne ko kuch nahi hai");
+  needMe(me=>modal("Sab reset karna hai?",[
+    para(entries.length+(entries.length===1?" entry":" entries")+" hat jayengi"+(CLOUD?", sabke liye.":".")),
+    para("Hatane wala: "+me+" (sabko dikhega)","sub")
+  ],[{t:"Nahi"},{t:"Haan, sab hatao",cls:"danger",fn:()=>{if(remove(entries.map(e=>e.id),me))toast("Sab reset ho gaya")}}]));
 };
+
+// QR
+$("pay").onclick=()=>$("qrdlg").showModal();
+$("qrclose").onclick=()=>$("qrdlg").close();
+$("copyupi").onclick=()=>{
+  const b=$("copyupi"),done=t=>{b.textContent=t;setTimeout(()=>{b.textContent="UPI ID copy karo"},1500)};
+  (navigator.clipboard?navigator.clipboard.writeText($("upi").textContent):Promise.reject()).then(()=>done("Copy ho gaya ✓"),()=>done("Copy nahi hua"));
+};
+// "Aap kaun" selector
+$("me").innerHTML='<option value="">Chuno</option>'+PLAYERS.map(p=>'<option>'+p.n+'</option>').join("");
+$("me").value=getMe();
+$("me").onchange=()=>setMe($("me").value);
 document.querySelectorAll(".quick .pill").forEach(b=>b.onclick=()=>{const d=new Date();d.setDate(d.getDate()+Number(b.dataset.q));setDate(ymd(d))});
 $("when").addEventListener("change",()=>setDate($("when").value));
 $("prev").onclick=()=>{view.setMonth(view.getMonth()-1);renderCal()};
