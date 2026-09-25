@@ -218,7 +218,7 @@ const PLAYERS=[
 ];
 const COLOR=Object.fromEntries(PLAYERS.map(p=>[p.n,p.c]));
 // Firebase Realtime Database ka URL (jaise https://gali-jar-default-rtdb.firebaseio.com). Khaali ho to data sirf isi browser mein rehta hai.
-const DB_URL="";
+const DB_URL="https://project-1f78c8f7-c00a-4d1c-990-default-rtdb.firebaseio.com";
 const FINE=10, LS="gali-jar-v1", CLOUD=!!DB_URL, API=DB_URL.replace(/\/+$/,"")+"/entries";
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,"0");
